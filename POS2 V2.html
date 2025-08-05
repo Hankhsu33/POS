@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <title>POS 即時推薦系統 - 顧客畫面</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <style>
+        body {
+            background-color: #fff;
+            color: #000;
+        }
+        .pos-container {
+            max-width: 1000px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #f2f2f2;
+            border-radius: 12px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .receipt-screen {
+            background-color: #fff;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+        }
+        .receipt-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        .item-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 0;
+            border-bottom: 1px dashed #aaa;
+        }
+        .recommend-section {
+            margin-top: 30px;
+        }
+        .recommend-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+        .recommend-card {
+            background-color: #fff;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            padding: 10px;
+        }
+        .recommend-card img {
+            width: 100%;
+            height: 120px;
+            object-fit: cover;
+            border-radius: 6px;
+        }
+    </style>
+</head>
+<body>
+    <div class="pos-container">
+        <h4>POS 即時推薦系統 - 顧客畫面</h4>
+
+        <!-- 商品清單 -->
+        <div class="receipt-screen mb-4">
+            <div class="receipt-header">
+                <div>會員 ID：<strong id="memberDisplay">user_0</strong></div>
+                <div>時間：<span id="datetime">2025-07-10 14:19</span></div>
+            </div>
+            <div id="itemList"></div>
+        </div>
+
+        <!-- 推薦商品區塊 -->
+        <div class="recommend-section">
+            <h5>為您推薦商品：</h5>
+            <div class="recommend-grid">
+                <div class="recommend-card">
+                    <img src="static/images/milk1.jpg" alt="芒果牛奶">
+                    <div class="mt-2"><strong>雀巢芒果牛奶200g</strong></div>
+                    <small class="text-muted">標籤：高蛋白, 乳品, 低脂, 牛奶</small>
+                </div>
+                <div class="recommend-card">
+                    <img src="static/images/bread1.jpg" alt="牛奶麵包">
+                    <div class="mt-2"><strong>可樂果牛奶麵包80g</strong></div>
+                    <small class="text-muted">標籤：童年, 甜點, 冷藏, 麵包</small>
+                </div>
+                <div class="recommend-card">
+                    <img src="static/images/soy1.jpg" alt="豆漿">
+                    <div class="mt-2"><strong>7-SELECT豆漿80g</strong></div>
+                    <small class="text-muted">標籤：經典, 鹹香, 蛋白質, 豆漿</small>
+                </div>
+                <div class="recommend-card">
+                    <img src="static/images/drink1.jpg" alt="香草蛋白飲">
+                    <div class="mt-2"><strong>小農香草蛋白飲1L</strong></div>
+                    <small class="text-muted">標籤：飲品, 鮮奶, 蛋白飲, 脆脆</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const items = [
+            { name: "(菌)卓杯百家香鬆飯糰", price: 45, quantity: 1 },
+            { name: "(熱)墨西哥嫩烤雞腿便當", price: 65, quantity: 1 },
+            { name: "甜蔥肉燥飯糰", price: 28, quantity: 1 },
+            { name: "統一超包裝拾香蔬菜", price: 35, quantity: 1 }
+        ];
+
+        function renderItemList() {
+            const list = document.getElementById("itemList");
+            list.innerHTML = "";
+            let total = 0;
+
+            items.forEach((item, index) => {
+                const subtotal = item.price * item.quantity;
+                total += subtotal;
+                list.innerHTML += `
+                    <div class="item-row">
+                        <span>${item.name}</span>
+                        <span>
+                            <button onclick="updateQuantity(${index}, -1)">-</button>
+                            <span style="margin: 0 10px;">${item.quantity}</span>
+                            <button onclick="updateQuantity(${index}, 1)">+</button>
+                            &nbsp; $${subtotal}
+                        </span>
+                    </div>
+                `;
+            });
+
+            list.innerHTML += `
+                <div class="item-row">
+                    <strong>總計</strong><strong>$${total}</strong>
+                </div>
+            `;
+        }
+
+        function updateQuantity(index, change) {
+            items[index].quantity += change;
+            if (items[index].quantity < 1) items[index].quantity = 1;
+            renderItemList();
+        }
+
+        function updateTime() {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString() + ' - ' + now.toLocaleDateString('zh-Hant', {
+                year: 'numeric',
+                month: 'long',
+                day: '2-digit'
+            });
+            document.getElementById('datetime').textContent = timeString;
+        }
+
+        updateTime();
+        setInterval(updateTime, 1000);
+        renderItemList();
+    </script>
+</body>
+</html>
