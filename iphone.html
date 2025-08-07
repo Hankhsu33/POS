@@ -108,14 +108,6 @@
     .hidden {
       display: none;
     }
-    input[type="number"] {
-      width: 100%;
-      padding: 10px;
-      font-size: 1em;
-      border-radius: 8px;
-      border: 1px solid #ccc;
-      margin-bottom: 10px;
-    }
     .status {
       padding: 12px;
       border-radius: 8px;
@@ -125,10 +117,6 @@
     .success {
       background: #d4edda;
       color: #155724;
-    }
-    .notyet {
-      background: #fff3cd;
-      color: #856404;
     }
   </style>
 </head>
@@ -147,9 +135,9 @@
     <!-- 推薦商品 -->
     <div class="section">
       <h2>🛒 為您推薦</h2>
-      <div class="product">高蛋白飲料（您常購買）<small>📦 庫存：15 瓶</small></div>
-      <div class="product">低糖地瓜便當（推薦給運動後補充）<small>📦 庫存：8 份</small></div>
-      <div class="product">新品：黑咖啡升級版 ☕<small>📦 庫存：25 杯</small></div>
+      <div class="product">高蛋白飲料（您常購買）<small>📦 庫存：<span class="highlight">10</span> 瓶</small></div>
+      <div class="product">低糖地瓜便當（推薦給運動後補充）<small>📦 庫存：<span class="highlight">8</span> 份</small></div>
+      <div class="product">新品：黑咖啡升級版 ☕<small>📦 庫存：<span class="highlight">20</span> 杯</small></div>
     </div>
 
     <!-- 功能按鈕 -->
@@ -191,8 +179,8 @@
     <!-- 步數區塊 -->
     <div class="section hidden" id="stepSection">
       <h2>🚶‍♂️ 今日步數檢測</h2>
-      <input type="number" id="steps" placeholder="輸入今日步數，如：8500" oninput="checkSteps()" />
-      <div id="step-message" class="status notyet">您今天尚未達標，繼續加油！</div>
+      <p>您今日共走了 <span class="highlight" id="stepCount">--</span> 步</p>
+      <div id="step-message" class="status success" style="display:none;"></div>
     </div>
   </div>
 
@@ -230,13 +218,17 @@
       document.getElementById("qrModal").style.display = "none";
     }
 
-    // 單選顯示區塊
+    // 切換區塊
     function showSection(targetId) {
       const sections = ["barcodeSection", "packageSection", "couponSection", "mapSection", "stepSection"];
       sections.forEach(id => {
         document.getElementById(id).classList.add("hidden");
       });
       document.getElementById(targetId).classList.remove("hidden");
+
+      if (targetId === "stepSection") {
+        showSteps();
+      }
     }
 
     // 地圖定位
@@ -254,27 +246,25 @@
       });
     }
 
-    // 步數判斷 + 推播
-    function checkSteps() {
-      const steps = parseInt(document.getElementById("steps").value || "0", 10);
-      const msg = document.getElementById("step-message");
+    // 步數邏輯：寫死為 8452 並顯示提醒 + 推播
+    function showSteps() {
+      const steps = 8452;
+      document.getElementById("stepCount").innerText = steps;
 
       if (steps >= 8000) {
-        msg.className = "status success";
-        msg.innerText = "✅ 今日已達標，快點來超商補充您的能量 💪";
+        const msg = document.getElementById("step-message");
+        msg.style.display = "block";
+        msg.innerText = "🎉 今日已達標，快點來超商補充您的能量 💪";
         if ("Notification" in window) {
           Notification.requestPermission().then(permission => {
             if (permission === "granted") {
-              new Notification("🎉 步數達標提醒", {
-                body: "您今日已達 8,000 步，快來超商補充您的能量吧！",
+              new Notification("🎯 步數達標提醒", {
+                body: `您今天已走 ${steps} 步，來超商補充能量吧！`,
                 icon: "https://cdn-icons-png.flaticon.com/512/1046/1046784.png"
               });
             }
           });
         }
-      } else {
-        msg.className = "status notyet";
-        msg.innerText = "您今天尚未達標，繼續加油！";
       }
     }
   </script>
