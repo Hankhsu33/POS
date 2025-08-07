@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>會員畫面</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f4f4;
+      padding: 30px;
+    }
+    .container {
+      max-width: 600px;
+      margin: auto;
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+    h1 {
+      color: #333;
+    }
+    .info {
+      margin: 20px 0;
+      font-size: 1.2em;
+    }
+    #map-link {
+      display: inline-block;
+      margin-top: 20px;
+      padding: 10px 15px;
+      background-color: #007bff;
+      color: white;
+      text-decoration: none;
+      border-radius: 6px;
+    }
+    #map-link:hover {
+      background-color: #0056b3;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>會員專區</h1>
+    <p class="info">🕒 當前時間：<strong>17:30</strong></p>
+    <p class="info">🏃 檢測到您已運動完畢！</p>
+    <p class="info">📍 正在尋找您最近的超商...</p>
+    <a id="map-link" href="#" target="_blank" style="display:none;">在 Google 地圖中導航最近的超商</a>
+  </div>
+
+  <script>
+    // 使用 HTML5 Geolocation API 定位
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(showPosition, showError);
+    } else {
+      document.querySelector('.info').innerText = "無法取得您的位置。";
+    }
+
+    function showPosition(position) {
+      const lat = position.coords.latitude;
+      const lng = position.coords.longitude;
+
+      // 產生 Google Maps 搜尋附近超商的導航連結
+      const mapUrl = `https://www.google.com/maps/search/便利商店/@${lat},${lng},17z`;
+      const link = document.getElementById("map-link");
+      link.href = mapUrl;
+      link.style.display = "inline-block";
+    }
+
+    function showError(error) {
+      const info = document.querySelector('.info');
+      switch(error.code) {
+        case error.PERMISSION_DENIED:
+          info.innerText = "❌ 您拒絕了定位權限。無法取得最近的超商位置。";
+          break;
+        case error.POSITION_UNAVAILABLE:
+          info.innerText = "⚠️ 位置資訊無法取得。";
+          break;
+        case error.TIMEOUT:
+          info.innerText = "⏱️ 定位逾時。";
+          break;
+        default:
+          info.innerText = "⚠️ 發生未知錯誤。";
+          break;
+      }
+    }
+  </script>
+</body>
+</html>
