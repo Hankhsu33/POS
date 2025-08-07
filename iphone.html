@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>超商會員專區</title>
 
-  <!-- 條碼 + QR Code 函式庫 -->
   <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/qrcodejs/qrcode.min.js"></script>
 
@@ -45,6 +44,41 @@
       display: block;
       margin: 15px auto;
     }
+    .highlight {
+      color: green;
+      font-weight: bold;
+    }
+    .product, .coupon {
+      background: #f1f1f1;
+      padding: 10px;
+      border-radius: 8px;
+      margin-bottom: 8px;
+      cursor: pointer;
+    }
+    small {
+      display: block;
+      margin-top: 5px;
+      font-size: 0.9em;
+      color: #555;
+    }
+    .btn-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .btn-group button {
+      flex: 1;
+      padding: 10px;
+      background: #007bff;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    .btn-group button:hover {
+      background: #0056b3;
+    }
     .map-link {
       display: inline-block;
       margin-top: 10px;
@@ -54,26 +88,7 @@
       text-decoration: none;
       border-radius: 8px;
     }
-    .map-link:hover {
-      background: #0056b3;
-    }
-    .coupon, .product {
-      background: #f1f1f1;
-      padding: 10px;
-      border-radius: 8px;
-      margin-bottom: 8px;
-      cursor: pointer;
-      transition: background 0.2s;
-    }
-    .coupon:hover {
-      background: #e0e0e0;
-    }
-    .highlight {
-      color: green;
-      font-weight: bold;
-    }
 
-    /* Modal 彈窗樣式 */
     #qrModal {
       display: none;
       position: fixed;
@@ -95,11 +110,15 @@
       margin-top: 15px;
       padding: 6px 12px;
     }
+
+    .hidden {
+      display: none;
+    }
   </style>
 </head>
 <body>
   <div class="container">
-    <!-- 會員資訊 -->
+    <!-- ✅ 會員資訊 -->
     <div class="section info-card">
       <h2>👤 會員資訊</h2>
       <p>姓名：林小明</p>
@@ -109,43 +128,60 @@
       <p>發票載具：已綁定 ✅</p>
     </div>
 
-    <!-- 條碼 -->
+    <!-- ✅ 推薦商品 -->
     <div class="section">
+      <h2>🛒 為您推薦</h2>
+      <div class="product">
+        高蛋白飲料（您常購買）
+        <small>📦 庫存：<span class="highlight">15</span> 瓶</small>
+      </div>
+      <div class="product">
+        低糖地瓜便當（推薦給運動後補充）
+        <small>📦 庫存：<span class="highlight">8</span> 份</small>
+      </div>
+      <div class="product">
+        新品：黑咖啡升級版 ☕
+        <small>📦 庫存：<span class="highlight">25</span> 杯</small>
+      </div>
+    </div>
+
+    <!-- 👉 功能選單按鈕 -->
+    <div class="btn-group">
+      <button onclick="showSection('barcodeSection')">🔳 條碼</button>
+      <button onclick="showSection('packageSection')">📦 包裹 (<span id="packageCount">1</span>)</button>
+      <button onclick="showSection('couponSection')">🎁 優惠券 (<span id="couponCount">2</span>)</button>
+      <button onclick="showSection('mapSection')">📍 導航</button>
+    </div>
+
+    <!-- 🔳 條碼 -->
+    <div class="section hidden" id="barcodeSection">
       <h2>🔳 會員條碼</h2>
       <svg id="barcode"></svg>
     </div>
 
-    <!-- 包裹通知 -->
-    <div class="section">
+    <!-- 📦 包裹 -->
+    <div class="section hidden" id="packageSection">
       <h2>📦 包裹通知</h2>
-      <p>您有 1 件包裹待領取。</p>
+      <p>您有 <strong>1</strong> 件包裹待領取。</p>
       <p>取件號碼：<strong>EZ12345678</strong></p>
     </div>
 
-    <!-- 推薦商品 -->
-    <div class="section">
-      <h2>🛒 為您推薦</h2>
-      <div class="product">高蛋白飲料（您常購買）</div>
-      <div class="product">低糖地瓜便當（推薦給運動後補充）</div>
-      <div class="product">新品：黑咖啡升級版 ☕</div>
-    </div>
-
-    <!-- 優惠券（可點選顯示 QR Code） -->
-    <div class="section">
+    <!-- 🎁 優惠券 -->
+    <div class="section hidden" id="couponSection">
       <h2>🎁 優惠券</h2>
       <div class="coupon" onclick="showCoupon('COFFEE50', '咖啡第二杯半價')">☕ 咖啡第二杯半價（剩 3 天）</div>
       <div class="coupon" onclick="showCoupon('DRINK100', '全店飲料滿 100 折 10 元')">🥤 全店飲料滿 100 折 10 元</div>
     </div>
 
-    <!-- 超商導航 -->
-    <div class="section">
+    <!-- 📍 導航 -->
+    <div class="section hidden" id="mapSection">
       <h2>📍 最近的超商</h2>
       <p id="store-status">偵測中...</p>
       <a id="map-link" class="map-link" href="#" target="_blank" style="display:none;">打開 Google 地圖導航</a>
     </div>
   </div>
 
-  <!-- 彈窗 QR Code 區 -->
+  <!-- 🎁 彈窗 QR Code -->
   <div id="qrModal">
     <div class="modal-content">
       <h3 id="couponTitle"></h3>
@@ -155,24 +191,19 @@
   </div>
 
   <script>
-    // 條碼產生
-    const memberId = "M123456789";
-    JsBarcode("#barcode", memberId, {
+    // 條碼
+    JsBarcode("#barcode", "M123456789", {
       format: "CODE128",
       width: 2,
       height: 60,
       displayValue: true
     });
 
-    // 優惠券 → 點擊彈出 QR Code
+    // 顯示 QR Code
     function showCoupon(code, title) {
       document.getElementById("couponTitle").innerText = title;
       document.getElementById("qrModal").style.display = "flex";
-
-      // 清空先前 QR
       document.getElementById("qrcode").innerHTML = "";
-
-      // 產生新 QR Code（你可以改成真實兌換網址）
       new QRCode(document.getElementById("qrcode"), {
         text: `https://store.com/redeem?code=${code}`,
         width: 200,
@@ -184,7 +215,20 @@
       document.getElementById("qrModal").style.display = "none";
     }
 
-    // 自動定位最近超商
+    // 顯示指定區塊，其餘隱藏
+    function showSection(targetId) {
+      const sectionIds = ["barcodeSection", "packageSection", "couponSection", "mapSection"];
+      sectionIds.forEach(id => {
+        const section = document.getElementById(id);
+        if (id === targetId) {
+          section.classList.remove("hidden");
+        } else {
+          section.classList.add("hidden");
+        }
+      });
+    }
+
+    // 地圖定位
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(pos => {
         const lat = pos.coords.latitude;
@@ -198,6 +242,10 @@
         document.getElementById("store-status").innerText = "❌ 無法取得位置。";
       });
     }
+
+    // 初始化數量（未來可串 API）
+    document.getElementById("packageCount").innerText = "1";
+    document.getElementById("couponCount").innerText = "2";
   </script>
 </body>
 </html>
