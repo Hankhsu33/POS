@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>POS 系統 - 店員操作端</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" />
+  <script src="/socket.io/socket.io.js"></script>
+  <style>
+    body {
+      background-color: #f5f5f5;
+      color: #000;
+    }
+    .recommend-section {
+  display: none;
+}
+
+    .pos-container {
+      max-width: 1100px;
+      margin: 20px auto;
+      padding: 20px;
+      background-color: #fff;
+      border-radius: 12px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    .section-title {
+      margin-top: 30px;
+      border-bottom: 1px solid #ccc;
+      padding-bottom: 5px;
+    }
+    .recommend-card {
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      padding: 10px;
+      background: #fdfdfd;
+      text-align: center;
+    }
+    .recommend-card img {
+      width: 100%;
+      height: 100px;
+      object-fit: cover;
+      border-radius: 6px;
+    }
+    .badge {
+      margin: 2px;
+    }
+    .item-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 0;
+      border-bottom: 1px dashed #aaa;
+    }
+.recommend-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 15px;
+}
+
+.recommend-card {
+  border: 1px solid #ccc;
+  border-radius: 10px;
+  padding: 10px;
+  background-color: #fff;
+  text-align: center;
+  transition: box-shadow 0.3s;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+}
+
+.recommend-card:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.recommend-card img {
+  width: 100%;
+  height: 120px;
+  object-fit: cover;
+  border-radius: 6px;
+}
+
+  </style>
+</head>
+<body>
+  
+  <div class="pos-container">
+    <h4>POS 系統 - 店員操作端</h4>
+
+    <!-- 會員輸入 -->
+    <div class="input-group mb-3">
+      <span class="input-group-text">會員 ID / 條碼</span>
+      <input type="text" id="memberInput" class="form-control" placeholder="請輸入或掃描會員條碼" onkeydown="handleMemberKey(event)">
+    </div>
+
+    <div class="d-flex justify-content-between">
+      <div>會員 ID：<strong id="memberDisplay">尚未辨識</strong></div>
+      <div>時間：<span id="datetime">--:--</span></div>
+    </div>
+
+    <!-- 顧客購物清單 -->
+    <div class="section-title mt-4"><strong>顧客購物清單</strong></div>
+    <div id="itemList"></div>
+
+    <!-- 商品條碼輸入 -->
+    <div class="section-title"><strong>新增商品（條碼掃描 / 手動輸入）</strong></div>
+    <div class="input-group mb-3">
+      <span class="input-group-text">商品條碼</span>
+      <input type="text" id="productInput" class="form-control" placeholder="請輸入或掃描商品條碼" onkeydown="handleProductKey(event)">
+    </div>
+        <div id="notification" style="
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: #198754;
+      color: white;
+      padding: 10px 20px;
+      border-radius: 8px;
+      display: none;
+      z-index: 9999;
+    "></div>
+    <!-- 推薦商品區 -->
+    <div class="section-title"><strong>系統推薦商品</strong></div>
+    <div  id="recommendSection" style="display: none;">
+      <div class="recommend-grid" id="recommendList"></div>
+    </div>
+    <!-- 底部控制按鈕 -->
+    <div class="text-end mt-4">
+      <button class="btn btn-warning me-2" onclick="toggleRecommendations(); showRecommendationsToCustomer();">顯示推薦商品</button>
+      <button class="btn btn-success" onclick="checkout()">確認結帳</button>
+      <button class="btn btn-secondary ms-2" onclick="resetCustomer()">下一位顧客</button>
+    </div>
+  </div>
+ 
+
+  <script>
+    const productDB = {};
+    const items = [];
+    const socket = io(); // ✅ 初始化 socket
+function loadProductsFromCSV() {
+  fetch("/products.csv")
+    .then(res => res.text())
+    .then(data => {
+      const lines = data.trim().split("\n");
+      const headers = lines[0].replace(/\r/g, "").split(",");
+
+      console.log("欄位順序：", headers);
+
+      for (let i = 1; i < lines.length; i++) {
+        const cols = lines[i].match(/(".*?"|[^",]+)(?=,|$)/g)?.map(c => c.replace(/^"|"$/g, '').trim());
+        if (!cols) continue;
+
+        const id = cols[headers.indexOf("商品ID")]?.trim();  // ✅ 改用 商品ID 為 key
+        const name = cols[headers.indexOf("商品名稱")]?.trim();
+        const tagsRaw = cols[headers.indexOf("標籤")]?.trim();
+        const tags = tagsRaw ? tagsRaw.split(",").map(t => t.trim()) : [];
+        const price = 10;
+
+        if (id && name) {
+          productDB[id] = { name, price, tags };
+          console.log("✅ 載入商品：", id, name);
+        }
+      }
+
+      console.log("✅ 商品資料載入完成：", productDB);
+    });
+}
+      const recommendations = [
+      {
+        name: "雀巢芒果牛奶200g折10元",
+        price: 35,
+        image: "milk1.jpg",
+        tags: ["高蛋白", "乳品", "低脂", "牛奶"],
+        reason: "根據您上週購買鮮奶推薦"
+      },
+      {
+        name: "可樂果牛奶麵包80g折10元",
+        price: 28,
+        image: "bread1.jpg",
+        tags: ["童年", "甜點", "冷藏", "麵包"],
+        reason: "推薦搭配早餐飯糰使用"
+      },
+      {
+        name: "7-SELECT豆漿80g折5元",
+        price: 30,
+        image: "soy1.jpg",
+        tags: ["經典", "鹹香", "蛋白質", "豆漿"],
+        reason: "符合您的高蛋白偏好"
+      },
+      {
+        name: "小農香草蛋白飲1L折10元",
+        price: 45,
+        image: "drink1.jpg",
+        tags: ["飲品", "鮮奶", "蛋白飲", "脆脆"],
+        reason: "推薦作為健身後補充"
+      }
+    ];
+  
+    function showRecommendationsToCustomer() {
+  socket.emit("show_recommendations", recommendations); // ✅ 將推薦清單傳給顧客端
+}
+    function renderRecommendations() {
+  const container = document.getElementById("recommendList");
+  container.innerHTML = "";
+  recommendations.forEach(rec => {
+  const tagsHtml = rec.tags.map(tag => `<span class="badge bg-info text-dark">${tag}</span>`).join(" ");
+  container.innerHTML += `
+    <div class="recommend-card">
+      <img src="${rec.image}" alt="${rec.name}">
+      <div class="mt-2"><strong>${rec.name}</strong></div>
+      <div>${tagsHtml}</div>
+      <small class="text-muted">${rec.reason}</small>
+      <div class="mt-2"><strong>(加入或存入)</strong></div>
+      <button class="btn btn-sm btn-outline-primary mt-2" onclick="addToCart('${rec.name}', ${rec.price})">加入清單</button>
+      <button class="btn btn-sm btn-outline-primary mt-2" onclick="showNotification('已存入會員');">存入會員</button>
+
+    </div>
+  `;
+});
+
+  }
+  let recommendationsRendered = false;
+function storeToMember(name, price) {
+  showNotification(`✅ ${name} 已存入會員`);
+  socket.emit("notify", `✅ ${name} 已存入會員`);
+}
+
+function toggleRecommendations() {
+  const section = document.getElementById("recommendSection");
+  if (section.style.display === "none" || section.style.display === "") {
+    section.style.display = "block";
+    if (!recommendationsRendered) {
+      renderRecommendations();
+      recommendationsRendered = true;
+    }
+  } else {
+    section.style.display = "none";
+  }
+}
+
+
+  function addToCart(name, price) {
+  const found = items.find(i => i.name === name);
+  if (found) {
+    found.quantity += 1;
+  } else {
+    items.push({ name, price, quantity: 1 });
+  }
+  renderItemList();
+  syncToCustomer();  // ✅ 同步給顧客端
+}
+
+
+    function renderItemList() {
+      const list = document.getElementById("itemList");
+      list.innerHTML = "";
+      let total = 0;
+      items.forEach((item, index) => {
+        const subtotal = item.price * item.quantity;
+        total += subtotal;
+        list.innerHTML += `
+          <div class="item-row">
+            <span>${item.name}</span>
+            <span>
+              <button onclick="updateQuantity(${index}, -1)">-</button>
+              <span style="margin: 0 10px;">${item.quantity}</span>
+              <button onclick="updateQuantity(${index}, 1)">+</button>
+              &nbsp; $${subtotal}
+            </span>
+          </div>
+        `;
+      });
+      list.innerHTML += `<div class="item-row"><strong>總計</strong><strong>$${total}</strong></div>`;
+    }
+
+    function updateQuantity(index, change) {
+  items[index].quantity += change;
+
+  if (items[index].quantity <= 0) {
+    items.splice(index, 1);  // ✨ 刪除該項目
+  }
+
+  renderItemList();          // ✨ 重新渲染清單
+  syncToCustomer();          // ✨ 同步顧客端畫面（若有）
+}
+
+
+
+
+    function handleMemberKey(e) {
+      if (e.key === "Enter") {
+        const memberId = document.getElementById("memberInput").value.trim();
+        if (memberId !== "") {
+          document.getElementById("memberDisplay").textContent = memberId;
+          showNotification(`✅ 成功辨識會員：${memberId}`);
+          document.getElementById("memberInput").value = "";
+        }syncToCustomer()
+      }
+    }
+
+    function handleProductKey(e) {
+      if (e.key === "Enter") {
+        const code = document.getElementById("productInput").value.trim();
+        if (productDB[code]) {
+          const { name, price } = productDB[code];
+          addToCart(name, price);
+          showNotification(`📦 已加入商品：${name}`);
+          socket.emit("notify", `📦 已加入商品：${name}`);
+
+        } else {
+          showNotification("⚠️ 查無商品條碼：" + code);
+          socket.emit("notify", "⚠️ 查無商品條碼：" + code);
+
+        }
+        document.getElementById("productInput").value = "";
+      }
+    }
+    // 改成這樣通知加入商品
+    function showNotification(msg) {
+      const n = document.getElementById("notification");
+      n.textContent = msg;
+      n.style.display = "block";
+      setTimeout(() => {
+        n.style.display = "none";
+      }, 2000);
+    }
+
+    function checkout() {
+      alert("✅ 結帳成功，總金額 $" + calculateTotal());
+    }
+
+    function resetCustomer() {
+      items.length = 0;
+      document.getElementById("memberDisplay").textContent = "尚未辨識";
+      renderItemList();
+      alert("🔄 已切換到下一位顧客");
+    }
+
+    function calculateTotal() {
+      return items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    }
+
+
+    function updateTime() {
+      const now = new Date();
+      const timeString = now.toLocaleTimeString() + ' - ' + now.toLocaleDateString('zh-Hant', {
+        year: 'numeric',
+        month: 'long',
+        day: '2-digit'
+      });
+      document.getElementById('datetime').textContent = timeString;
+    }
+function sendRecommendations() {
+  socket.emit("update", {
+    member: document.getElementById("memberDisplay").textContent,
+    items: items,
+    recommendations: recommendations  // ✅ 傳送推薦商品
+  });
+
+  alert("✅ 已將推薦商品顯示給顧客！");
+}
+  function syncToCustomer() {
+  socket.emit("update", {
+  member: document.getElementById("memberDisplay").textContent,
+  items: items,
+  recommendations: recommendations // ✅ 必須包含這一行
+});
+}
+
+  // 初始化時自動載入商品資料
+  window.onload = function () {
+  updateTime();
+  loadProductsFromCSV();
+  renderItemList();
+  renderRecommendations();
+  syncToCustomer(); // ✅ 初始同步給顧客端
+};
+setInterval(updateTime, 1000);
+  </script>
+</body>
+</html>
