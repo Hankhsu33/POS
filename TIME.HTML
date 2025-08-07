@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <title>時間測試</title>
+</head>
+<body>
+  <h3>目前時間：<span id="datetime">--:--</span></h3>
+
+  <script>
+    function updateTime() {
+      const now = new Date();
+      const timeString = now.toLocaleTimeString() + ' - ' + now.toLocaleDateString('zh-Hant', {
+        year: 'numeric',
+        month: 'long',
+        day: '2-digit'
+      });
+      document.getElementById('datetime').textContent = timeString;
+    }
+
+    updateTime();
+    setInterval(updateTime, 1000);
+  </script>
+</body>
+</html>
