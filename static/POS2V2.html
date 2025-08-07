@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>POS 即時推薦系統 - 顧客畫面</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" />
+  <script src="/socket.io/socket.io.js"></script>
+  <style>
+    body {
+      background-color: #fff;
+      color: #000;
+    }
+
+    .pos-container {
+      max-width: 1000px;
+      margin: 20px auto;
+      padding: 20px;
+      background-color: #f8f9fa;
+      border-radius: 12px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+
+    .receipt-screen {
+      background-color: #fff;
+      padding: 20px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+    }
+
+    .receipt-header {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+
+    .item-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 0;
+      border-bottom: 1px dashed #aaa;
+    }
+
+    .recommend-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+    }
+
+    .recommend-card {
+      background-color: #fff;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      padding: 10px;
+      text-align: center;
+    }
+
+    .recommend-card img {
+      width: 100%;
+      height: 120px;
+      object-fit: cover;
+      border-radius: 6px;
+    }
+
+    .sticky-footer {
+      position: sticky;
+      bottom: 0;
+      background: #fff;
+      padding: 10px;
+      border-top: 1px solid #ccc;
+      text-align: right;
+      font-weight: bold;
+    }
+
+    .badge {
+      margin: 2px;
+    }
+  </style>
+</head>
+<body>
+  <div class="pos-container">
+    <h4>POS 即時推薦系統 - 顧客畫面</h4>
+
+    <!-- 商品清單 -->
+    <div class="receipt-screen mb-4">
+      <div class="receipt-header">
+        <div>會員 ID：<strong id="memberDisplay">user_0</strong></div>
+        <div>時間：<span id="datetime">2025-07-10 14:19</span></div>
+      </div>
+      <div id="itemList"></div>
+    </div>
+
+    <!-- 推薦商品區塊 -->
+    <div class="recommend-section">
+      <h5>為您推薦商品：</h5>
+      <div class="recommend-grid" id="recommendList"></div>
+    </div>
+
+    <!-- 底部總金額 -->
+    <div class="sticky-footer" id="totalFooter"></div>
+  </div>
+  <script src="/socket.io/socket.io.js"></script>
+<script>
+  const socket = io();
+
+  socket.on("sync", data => {
+    document.getElementById("memberDisplay").textContent = data.member || "尚未辨識";
+
+    const itemList = document.getElementById("itemList");
+    const recommendList = document.getElementById("recommendList");
+    const totalFooter = document.getElementById("totalFooter");
+
+    itemList.innerHTML = "";
+    recommendList.innerHTML = "";
+
+    let total = 0;
+
+    // 顯示購物清單
+    data.items?.forEach(item => {
+      const subtotal = item.price * item.quantity;
+      total += subtotal;
+      itemList.innerHTML += `
+        <div class="item-row">
+          <span>${item.name}</span>
+          <span>${item.quantity} x $${item.price} = $${subtotal}</span>
+        </div>
+      `;
+    });
+
+    // 顯示總金額
+    totalFooter.innerHTML = `總計：$${total}`;
+
+    // 顯示推薦商品
+    data.recommendations?.forEach(rec => {
+      const tagsHtml = rec.tags.map(tag => `<span class="badge bg-info">${tag}</span>`).join(" ");
+      recommendList.innerHTML += `
+        <div class="recommend-card">
+          <img src="${rec.image}" alt="${rec.name}">
+          <div class="mt-2"><strong>${rec.name}</strong></div>
+          <div class="mt-1">${tagsHtml}</div>
+          <small class="text-muted">${rec.reason}</small>
+        </div>
+      `;
+    });
+  });
+
+  function updateTime() {
+    const now = new Date();
+    const timeString = now.toLocaleTimeString() + ' - ' + now.toLocaleDateString('zh-Hant', {
+      year: 'numeric',
+      month: 'long',
+      day: '2-digit'
+    });
+    document.getElementById('datetime').textContent = timeString;
+  }
+
+  updateTime();
+  setInterval(updateTime, 1000);
+</script>
+
+</body>
+</html>
