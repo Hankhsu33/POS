@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>超商會員專區</title>
+  <title>超商會員系統</title>
 
   <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/qrcodejs/qrcode.min.js"></script>
@@ -39,10 +39,6 @@
     }
     .info-card p {
       margin: 5px 0;
-    }
-    #barcode {
-      display: block;
-      margin: 15px auto;
     }
     .highlight {
       color: green;
@@ -88,7 +84,6 @@
       text-decoration: none;
       border-radius: 8px;
     }
-
     #qrModal {
       display: none;
       position: fixed;
@@ -110,15 +105,36 @@
       margin-top: 15px;
       padding: 6px 12px;
     }
-
     .hidden {
       display: none;
+    }
+    input[type="number"] {
+      width: 100%;
+      padding: 10px;
+      font-size: 1em;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      margin-bottom: 10px;
+    }
+    .status {
+      padding: 12px;
+      border-radius: 8px;
+      font-weight: bold;
+      text-align: center;
+    }
+    .success {
+      background: #d4edda;
+      color: #155724;
+    }
+    .notyet {
+      background: #fff3cd;
+      color: #856404;
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <!-- ✅ 會員資訊 -->
+    <!-- 會員資訊 -->
     <div class="section info-card">
       <h2>👤 會員資訊</h2>
       <p>姓名：林小明</p>
@@ -128,60 +144,59 @@
       <p>發票載具：已綁定 ✅</p>
     </div>
 
-    <!-- ✅ 推薦商品 -->
+    <!-- 推薦商品 -->
     <div class="section">
       <h2>🛒 為您推薦</h2>
-      <div class="product">
-        高蛋白飲料（您常購買）
-        <small>📦 庫存：<span class="highlight">15</span> 瓶</small>
-      </div>
-      <div class="product">
-        低糖地瓜便當（推薦給運動後補充）
-        <small>📦 庫存：<span class="highlight">8</span> 份</small>
-      </div>
-      <div class="product">
-        新品：黑咖啡升級版 ☕
-        <small>📦 庫存：<span class="highlight">25</span> 杯</small>
-      </div>
+      <div class="product">高蛋白飲料（您常購買）<small>📦 庫存：15 瓶</small></div>
+      <div class="product">低糖地瓜便當（推薦給運動後補充）<small>📦 庫存：8 份</small></div>
+      <div class="product">新品：黑咖啡升級版 ☕<small>📦 庫存：25 杯</small></div>
     </div>
 
-    <!-- 👉 功能選單按鈕 -->
+    <!-- 功能按鈕 -->
     <div class="btn-group">
       <button onclick="showSection('barcodeSection')">🔳 條碼</button>
-      <button onclick="showSection('packageSection')">📦 包裹 (<span id="packageCount">1</span>)</button>
-      <button onclick="showSection('couponSection')">🎁 優惠券 (<span id="couponCount">2</span>)</button>
+      <button onclick="showSection('packageSection')">📦 包裹 (1)</button>
+      <button onclick="showSection('couponSection')">🎁 優惠券 (2)</button>
       <button onclick="showSection('mapSection')">📍 導航</button>
+      <button onclick="showSection('stepSection')">🚶‍♂️ 步數偵測</button>
     </div>
 
-    <!-- 🔳 條碼 -->
+    <!-- 條碼 -->
     <div class="section hidden" id="barcodeSection">
       <h2>🔳 會員條碼</h2>
       <svg id="barcode"></svg>
     </div>
 
-    <!-- 📦 包裹 -->
+    <!-- 包裹 -->
     <div class="section hidden" id="packageSection">
       <h2>📦 包裹通知</h2>
       <p>您有 <strong>1</strong> 件包裹待領取。</p>
       <p>取件號碼：<strong>EZ12345678</strong></p>
     </div>
 
-    <!-- 🎁 優惠券 -->
+    <!-- 優惠券 -->
     <div class="section hidden" id="couponSection">
       <h2>🎁 優惠券</h2>
       <div class="coupon" onclick="showCoupon('COFFEE50', '咖啡第二杯半價')">☕ 咖啡第二杯半價（剩 3 天）</div>
       <div class="coupon" onclick="showCoupon('DRINK100', '全店飲料滿 100 折 10 元')">🥤 全店飲料滿 100 折 10 元</div>
     </div>
 
-    <!-- 📍 導航 -->
+    <!-- 地圖 -->
     <div class="section hidden" id="mapSection">
       <h2>📍 最近的超商</h2>
       <p id="store-status">偵測中...</p>
       <a id="map-link" class="map-link" href="#" target="_blank" style="display:none;">打開 Google 地圖導航</a>
     </div>
+
+    <!-- 步數區塊 -->
+    <div class="section hidden" id="stepSection">
+      <h2>🚶‍♂️ 今日步數檢測</h2>
+      <input type="number" id="steps" placeholder="輸入今日步數，如：8500" oninput="checkSteps()" />
+      <div id="step-message" class="status notyet">您今天尚未達標，繼續加油！</div>
+    </div>
   </div>
 
-  <!-- 🎁 彈窗 QR Code -->
+  <!-- QR 彈窗 -->
   <div id="qrModal">
     <div class="modal-content">
       <h3 id="couponTitle"></h3>
@@ -191,7 +206,7 @@
   </div>
 
   <script>
-    // 條碼
+    // 條碼產生
     JsBarcode("#barcode", "M123456789", {
       format: "CODE128",
       width: 2,
@@ -215,17 +230,13 @@
       document.getElementById("qrModal").style.display = "none";
     }
 
-    // 顯示指定區塊，其餘隱藏
+    // 單選顯示區塊
     function showSection(targetId) {
-      const sectionIds = ["barcodeSection", "packageSection", "couponSection", "mapSection"];
-      sectionIds.forEach(id => {
-        const section = document.getElementById(id);
-        if (id === targetId) {
-          section.classList.remove("hidden");
-        } else {
-          section.classList.add("hidden");
-        }
+      const sections = ["barcodeSection", "packageSection", "couponSection", "mapSection", "stepSection"];
+      sections.forEach(id => {
+        document.getElementById(id).classList.add("hidden");
       });
+      document.getElementById(targetId).classList.remove("hidden");
     }
 
     // 地圖定位
@@ -243,9 +254,29 @@
       });
     }
 
-    // 初始化數量（未來可串 API）
-    document.getElementById("packageCount").innerText = "1";
-    document.getElementById("couponCount").innerText = "2";
+    // 步數判斷 + 推播
+    function checkSteps() {
+      const steps = parseInt(document.getElementById("steps").value || "0", 10);
+      const msg = document.getElementById("step-message");
+
+      if (steps >= 8000) {
+        msg.className = "status success";
+        msg.innerText = "✅ 今日已達標，快點來超商補充您的能量 💪";
+        if ("Notification" in window) {
+          Notification.requestPermission().then(permission => {
+            if (permission === "granted") {
+              new Notification("🎉 步數達標提醒", {
+                body: "您今日已達 8,000 步，快來超商補充您的能量吧！",
+                icon: "https://cdn-icons-png.flaticon.com/512/1046/1046784.png"
+              });
+            }
+          });
+        }
+      } else {
+        msg.className = "status notyet";
+        msg.innerText = "您今天尚未達標，繼續加油！";
+      }
+    }
   </script>
 </body>
 </html>
