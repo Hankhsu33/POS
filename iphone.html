@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>會員畫面</title>
   <style>
     body {
@@ -37,20 +37,35 @@
     #map-link:hover {
       background-color: #0056b3;
     }
+    .barcode-container {
+      margin-top: 30px;
+      text-align: center;
+    }
+    .barcode-label {
+      margin-bottom: 10px;
+      font-weight: bold;
+    }
   </style>
 </head>
 <body>
   <div class="container">
     <h1>會員專區</h1>
-    <p class="info">會員資訊：090000002</p>
     <p class="info">🕒 當前時間：<strong>17:30</strong></p>
     <p class="info">🏃 檢測到您已運動完畢！</p>
     <p class="info">📍 正在尋找您最近的超商...</p>
     <a id="map-link" href="#" target="_blank" style="display:none;">在 Google 地圖中導航最近的超商</a>
+
+    <div class="barcode-container">
+      <p class="barcode-label">📌 您的會員條碼：</p>
+      <svg id="barcode"></svg>
+    </div>
   </div>
 
+  <!-- 引入 JsBarcode 函式庫 -->
+  <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+
   <script>
-    // 使用 HTML5 Geolocation API 定位
+    // 定位功能
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(showPosition, showError);
     } else {
@@ -60,8 +75,6 @@
     function showPosition(position) {
       const lat = position.coords.latitude;
       const lng = position.coords.longitude;
-
-      // 產生 Google Maps 搜尋附近超商的導航連結
       const mapUrl = `https://www.google.com/maps/search/便利商店/@${lat},${lng},17z`;
       const link = document.getElementById("map-link");
       link.href = mapUrl;
@@ -85,9 +98,15 @@
           break;
       }
     }
+
+    // 產生會員條碼
+    const memberId = "M123456789"; // ← 你可以改成從後端或登入資料帶入
+    JsBarcode("#barcode", memberId, {
+      format: "CODE128",
+      width: 2,
+      height: 60,
+      displayValue: true
+    });
   </script>
 </body>
 </html>
-
-
-
